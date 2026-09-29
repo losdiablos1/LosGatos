@@ -89,7 +89,7 @@ body.fin main{padding:0;max-width:440px}
 .tarjeta{container-type:inline-size;background:#fff;border-radius:18px;margin-top:7px;overflow:hidden}
 .tc{position:relative;aspect-ratio:1097/1056;width:100%}
 .img-fondo-tc{position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;z-index:1;pointer-events:none}
-.monto3{position:absolute;left:12.9%;top:15%;background:none;border-radius:0;padding:0;color:var(--numero);font-family:inherit;font-size:12.7cqw;font-weight:500;line-height:1;text-align:left;display:flex;align-items:baseline;gap:2cqw;z-index:2}
+.monto3{position:absolute;left:calc(12.9% - .1em);top:calc(15% + .1em);background:none;border-radius:0;padding:0;color:var(--numero);font-family:inherit;font-size:12.7cqw;font-weight:500;line-height:1;text-align:left;display:flex;align-items:baseline;gap:2cqw;z-index:2}
 .pre3{font-size:.6em}
 .fh{position:absolute;left:4.2%;top:41.4%;transform:translateY(-50%);display:flex;align-items:center;gap:1.3cqw;font-size:3.6cqw;font-weight:500;color:var(--fecha);z-index:2}
 .fh svg{width:3.9cqw;height:3.9cqw;flex:none}
@@ -329,6 +329,7 @@ var CONFIG={
     arriba:'{pana}',
     prefijo:'%',
     limite:100,
+    decimales:1,
     textoLimite:'Límite: {limite}',
     textoLimiteError:'¡Ese número se pasa del límite!',
     placeholderMensaje:'Agregar mensaje',
@@ -439,7 +440,7 @@ function agregar(){
 }
 
 /* ---------- PANTALLA 2: CANTIDAD ---------- */
-var KEYS=[['1',''],['2','ABC'],['3','DEF'],['4','GHI'],['5','JKL'],['6','MNO'],['7','PQRS'],['8','TUV'],['9','WXYZ'],['',''],['0',''],['⌫','']];
+var KEYS=[['1',''],['2','ABC'],['3','DEF'],['4','GHI'],['5','JKL'],['6','MNO'],['7','PQRS'],['8','TUV'],['9','WXYZ'],['.',''],['0',''],['⌫','']];
 (function(){
   var T=$('teclado');
   KEYS.forEach(function(k){
@@ -458,6 +459,12 @@ var KEYS=[['1',''],['2','ABC'],['3','DEF'],['4','GHI'],['5','JKL'],['6','MNO'],[
   });
 })();
 function tecla(d){
+  if(d==='.'){
+    if(val.indexOf('.')>-1)return;
+    val=(val===''?'0':val)+'.';pintarPay();return;
+  }
+  var pt=val.indexOf('.');
+  if(pt>-1&&val.length-pt-1>=P.decimales)return;
   var n=(val==='0'?'':val)+d;
   if(+n>P.limite){
     var m=$('monto');m.classList.remove('shake');void m.offsetWidth;m.classList.add('shake');
@@ -503,12 +510,13 @@ function ponerImg(id,lista,v,carita,resp){
 function pick(a){return a[Math.floor(Math.random()*a.length)];}
 function resultado(){
   if(val===''){toast('Escribe un número primero');return;}
-  var v=Math.min(P.limite,Math.round(+val||0));
+  var fd=Math.pow(10,P.decimales);
+  var v=Math.min(P.limite,Math.round((+val||0)*fd)/fd),vb=Math.floor(v);
   var it=data.items[cur];it.p=v;save();
   $('nom3').textContent=it.e+' '+it.n;
   $('pre3').textContent=F.prefijo3||'';
   var t=F.titulos[F.titulos.length-1].t;
-  for(var i=0;i<F.titulos.length;i++){if(v<=F.titulos[i].hasta){t=F.titulos[i].t;break;}}
+  for(var i=0;i<F.titulos.length;i++){if(vb<=F.titulos[i].hasta){t=F.titulos[i].t;break;}}
   $('tit3').textContent=t;
   var ahora=new Date();
   $('fecha').textContent=ahora.toLocaleDateString('es-PE',{day:'numeric',month:'short',year:'numeric'});
@@ -518,12 +526,12 @@ function resultado(){
   var nv=v<F.cortes[0]?'bajo':v<F.cortes[1]?'medio':'alto';
   var D=$('datos');D.textContent='';
   F.filas.forEach(function(f){var r=mk('div','dato');r.appendChild(mk('span','',f.etiqueta));r.appendChild(mk('b','',pick(f[nv])));D.appendChild(r);});
-  ponerImg('imgArriba',CONFIG.bannerFijo?[{hasta:100,img:CONFIG.bannerFijo}]:CONFIG.imagenes.arriba,v,null);
-  ponerImg('imgAbajo',CONFIG.imagenAbajo?[{hasta:100,img:CONFIG.imagenAbajo}]:CONFIG.imagenes.abajo,v,null,CONFIG.imagenAbajoRespaldo);
+  ponerImg('imgArriba',CONFIG.bannerFijo?[{hasta:100,img:CONFIG.bannerFijo}]:CONFIG.imagenes.arriba,vb,null);
+  ponerImg('imgAbajo',CONFIG.imagenAbajo?[{hasta:100,img:CONFIG.imagenAbajo}]:CONFIG.imagenes.abajo,vb,null,CONFIG.imagenAbajoRespaldo);
   $('val3').textContent='0';
   show('s3');
   var t0=null;
-  function step(ts){if(!t0)t0=ts;var k=Math.min((ts-t0)/1400,1);$('val3').textContent=Math.round(v*k);if(k<1)requestAnimationFrame(step);}
+  function step(ts){if(!t0)t0=ts;var k=Math.min((ts-t0)/1400,1);$('val3').textContent=String(Math.round(v*k*fd)/fd);if(k<1)requestAnimationFrame(step);}
   requestAnimationFrame(step);
 }
 $('lbCod').textContent=F.etiquetaCodigo;$('lbDatos').textContent=F.etiquetaDatos;
